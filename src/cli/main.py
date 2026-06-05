@@ -13,6 +13,8 @@ from src.analyzers.git_history import GitHistoryAnalyzer
 from src.analyzers.pr_analyzer import PRAnalyzer
 from src.generators.llm_client import GroqClient
 from src.generators.orchestrator import DocOrchestrator
+from src.models.documentation import load_doc_metadata, save_doc_metadata
+from src.analyzers.structure import compute_module_hashes
 
 app = typer.Typer()
 
@@ -170,6 +172,9 @@ def generate(
             full_content += f"{'#' * section.level} {section.title}\n\n{section.content}\n\n"
         doc_file.write_text(full_content)
 
+        current_hashes = compute_module_hashes(repo_dir)
+        save_doc_metadata(doc, output_path, module_content_hashes=current_hashes)
+
         typer.echo(f"Documentation generated: {doc_file}")
 
 
@@ -187,26 +192,187 @@ def list_repos():
 @app.command()
 def check(
     repo_url: str = typer.Argument(..., help="Repository URL"),
+    output: str = typer.Option("./docs", "--output", "-o", help="Docs directory"),
 ):
-    """Check if documentation is stale."""
-    typer.echo(f"Staleness check not yet implemented for: {repo_url}", err=True)
+    """Check if documentation is stale and report which sections need updating."""
+    meta = load_doc_metadata(Path(output))
+    if meta is None:
+        typer.echo("No documentation metadata found. Run 'generate' first.", err=True)
+        raise typer.Exit(1)
+
+    config = load_config()
+    repo_cfg = next((r for r in config.repositories if r.url == repo_url), None)
+    if repo_cfg is None:
+        typer.echo(
+            f"Error: Repository '{repo_url}' not configured. Run 'init' first.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    creds_dir = Path.home() / ".config" / "doc-rebuild" / "credentials"
+    cred_file = creds_dir / f"{repo_cfg.credentials_ref}.cred"
+    if not cred_file.exists():
+        typer.echo("Error: Credentials not found. Re-run 'init'.", err=True)
+        raise typer.Exit(1)
+
+    token = decrypt_token(cred_file.read_bytes())
+    conn = RepositoryConnection(
+        url=repo_url,
+        provider=_detect_provider(repo_url),
+        branch=repo_cfg.branch,
+    )
+    connector = _build_connector(conn)
+
+    import tempfile
+    typer.echo("Cloning repository to check for changes...", err=True)
+    with tempfile.TemporaryDirectory(prefix="doc-rebuild-check-") as tmp:
+        repo_dir = Path(tmp) / "repo"
+        try:
+            connector.clone_repo(repo_dir, token)
+        except Exception as e:
+            typer.echo(f"Error cloning repository: {e}", err=True)
+            raise typer.Exit(1)
+
+        typer.echo("Computing current module hashes...", err=True)
+        current_hashes = compute_module_hashes(repo_dir)
+
+        from src.analyzers.structure import StructureAnalyzer
+        analyzer = StructureAnalyzer(repo_dir)
+        analysis = analyzer.analyze()
+
+        from src.generators.orchestrator import DocOrchestrator
+        stale_sections, _ = DocOrchestrator.detect_static_stale(
+            Path(output), current_hashes, analysis
+        )
+
+    if not stale_sections:
+        typer.echo("No metadata found. Run with full 'generate' first.")
+        return
+
+    stale_any = False
+    for title, is_stale in stale_sections:
+        if is_stale:
+            typer.echo(f"  [STALE]  {title}")
+            stale_any = True
+        else:
+            typer.echo(f"  [FRESH]  {title}")
+
+    if stale_any:
+        typer.echo("\nDocumentation is stale. Run 'update' to regenerate sections.")
+    else:
+        typer.echo("\nAll documentation sections are up to date.")
 
 
 @app.command()
 def update(
     repo_url: str = typer.Argument(..., help="Repository URL"),
+    output: str = typer.Option("./docs", "--output", "-o", help="Docs directory"),
+    api_key: str | None = typer.Option(None, "--api-key", envvar="GROQ_API_KEY", help="Groq API key"),
 ):
-    """Update stale documentation sections."""
-    typer.echo(f"Update not yet implemented for: {repo_url}", err=True)
+    """Regenerate only stale documentation sections (incremental update)."""
+    meta = load_doc_metadata(Path(output))
+    if meta is None:
+        typer.echo("No documentation metadata found. Run 'generate' first.", err=True)
+        raise typer.Exit(1)
+
+    output_path = Path(output)
+    doc_file = next(output_path.glob("*.md"), None)
+    if doc_file is None:
+        typer.echo("No documentation file found. Run 'generate' first.", err=True)
+        raise typer.Exit(1)
+
+    if not api_key:
+        typer.echo("Error: Groq API key required. Set GROQ_API_KEY or pass --api-key.", err=True)
+        raise typer.Exit(1)
+
+    config = load_config()
+    repo_cfg = next((r for r in config.repositories if r.url == repo_url), None)
+    if repo_cfg is None:
+        typer.echo(
+            f"Error: Repository '{repo_url}' not configured. Run 'init' first.",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    creds_dir = Path.home() / ".config" / "doc-rebuild" / "credentials"
+    cred_file = creds_dir / f"{repo_cfg.credentials_ref}.cred"
+    if not cred_file.exists():
+        typer.echo("Error: Credentials not found. Re-run 'init'.", err=True)
+        raise typer.Exit(1)
+
+    token = decrypt_token(cred_file.read_bytes())
+    conn = RepositoryConnection(
+        url=repo_url,
+        provider=_detect_provider(repo_url),
+        branch=repo_cfg.branch,
+    )
+    connector = _build_connector(conn)
+    llm = GroqClient(api_key=api_key)
+    orch = DocOrchestrator(llm)
+
+    # Reconstruct existing doc sections from metadata
+    from src.models.documentation import Documentation, DocSection
+    existing_sections = [
+        DocSection(title=s.title, level=s.level, source_modules=s.source_modules)
+        for s in meta.sections
+    ]
+    existing_doc = Documentation(
+        repo_url=repo_url,
+        sections=existing_sections,
+        source_hash=meta.source_hash,
+    )
+
+    import tempfile
+    typer.echo("Cloning repository...", err=True)
+    with tempfile.TemporaryDirectory(prefix="doc-rebuild-update-") as tmp:
+        repo_dir = Path(tmp) / "repo"
+        try:
+            connector.clone_repo(repo_dir, token)
+        except Exception as e:
+            typer.echo(f"Error cloning repository: {e}", err=True)
+            raise typer.Exit(1)
+
+        typer.echo("Analyzing code structure...", err=True)
+        from src.analyzers.structure import StructureAnalyzer
+        analyzer = StructureAnalyzer(repo_dir)
+        analysis = analyzer.analyze()
+
+        typer.echo("Detecting stale sections...", err=True)
+        current_hashes = compute_module_hashes(repo_dir)
+        stale_sections, _ = DocOrchestrator.detect_static_stale(output_path, current_hashes, analysis)
+
+        stale_titles = [t for t, s in stale_sections if s]
+        if not stale_titles:
+            typer.echo("No stale sections found. Documentation is up to date.")
+            return
+
+        typer.echo(f"Regenerating {len(stale_titles)} stale section(s): {', '.join(stale_titles)}", err=True)
+        updated_doc = orch.update(analysis, output_path, existing_doc)
+
+        full_content = f"# {connector.get_repo_name()}\n\n"
+        for section in updated_doc.sections:
+            full_content += f"{'#' * section.level} {section.title}\n\n{section.content}\n\n"
+        doc_file.write_text(full_content)
+        current_hashes = compute_module_hashes(repo_dir)
+        save_doc_metadata(updated_doc, output_path, module_content_hashes=current_hashes)
+
+        typer.echo(f"Documentation updated: {doc_file}")
 
 
 @app.command()
 def config_view():
-    """View configuration."""
+    """View current configuration."""
     config = load_config()
-    typer.echo(f"Repositories: {len(config.repositories)}")
-    typer.echo(f"Output dir: {config.generation.output_dir}")
-    typer.echo(f"LLM model: {config.generation.llm.model}")
+    typer.echo(f"Repositories ({len(config.repositories)}):")
+    for r in config.repositories:
+        typer.echo(f"  - {r.url} (branch: {r.branch}, provider: {r.provider})")
+    typer.echo(f"\nGeneration settings:")
+    typer.echo(f"  Output dir:     {config.generation.output_dir}")
+    typer.echo(f"  Include PRs:    {config.generation.include_prs}")
+    typer.echo(f"  Include history: {config.generation.include_history}")
+    typer.echo(f"  Max commits:    {config.generation.max_commit_depth}")
+    typer.echo(f"  LLM model:      {config.generation.llm.model}")
+    typer.echo(f"  Temperature:    {config.generation.llm.temperature}")
 
 
 if __name__ == "__main__":

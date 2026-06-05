@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 from src.models.analysis import Module, ModuleType, Dependency, DepType, AnalysisResult
 
@@ -122,3 +123,19 @@ class StructureAnalyzer:
                     name = m.group(1).split("/")[0].split(".")[0]
                     imports.append(name)
         return imports
+
+
+def compute_module_hashes(repo_dir: Path) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for file_path in repo_dir.rglob("*"):
+        if not file_path.is_file():
+            continue
+        if file_path.name.startswith("."):
+            continue
+        ext = file_path.suffix.lower()
+        if ext not in LANGUAGE_EXTENSIONS:
+            continue
+        rel = str(file_path.relative_to(repo_dir))
+        content = file_path.read_bytes()
+        hashes[rel] = hashlib.sha256(content).hexdigest()[:12]
+    return hashes

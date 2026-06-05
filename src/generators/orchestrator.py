@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 from src.models.analysis import AnalysisResult, CommitEvent, PRInsight
-from src.models.documentation import Documentation, DocSection
+from src.models.documentation import Documentation, DocSection, load_doc_metadata, save_doc_metadata
 
 
 DOC_SECTION_PROMPT = """Based on the following source code analysis, generate a documentation section.
@@ -138,3 +138,82 @@ class DocOrchestrator:
         raw = f"{analysis.total_files}:{analysis.total_loc}:{len(analysis.module_map)}"
         import hashlib
         return hashlib.sha256(raw.encode()).hexdigest()[:12]
+
+    @staticmethod
+    def _compute_static_hash(analysis: AnalysisResult) -> str:
+        raw = f"{analysis.total_files}:{analysis.total_loc}:{len(analysis.module_map)}"
+        import hashlib
+        return hashlib.sha256(raw.encode()).hexdigest()[:12]
+
+    @staticmethod
+    def detect_static_stale(
+        doc_dir: Path,
+        current_module_hashes: dict[str, str],
+        current_analysis: AnalysisResult,
+    ) -> tuple[list[tuple[str, bool]], object | None]:
+        meta = load_doc_metadata(doc_dir)
+        if meta is None:
+            return [], None
+
+        stale_sections: list[tuple[str, bool]] = []
+        overall_stale = DocOrchestrator._compute_static_hash(current_analysis) != meta.source_hash
+
+        for sec_meta in meta.sections:
+            source_set = set(sec_meta.source_modules)
+            section_stale = overall_stale
+            if not section_stale and meta.module_content_hashes:
+                for mod in source_set:
+                    current_hash = current_module_hashes.get(mod)
+                    stored_hashes = meta.module_content_hashes
+                    if stored_hashes.get(mod) != current_hash:
+                        section_stale = True
+                        break
+            stale_sections.append((sec_meta.title, section_stale))
+
+        return stale_sections, meta
+
+    def update(
+        self,
+        analysis: AnalysisResult,
+        doc_dir: Path,
+        existing_doc: Documentation,
+    ) -> Documentation:
+        stale_sections, meta = DocOrchestrator.detect_static_stale(
+            doc_dir,
+            {},
+            analysis,
+        )
+
+        new_sections: list[DocSection] = []
+        if stale_sections:
+            stale_map = dict(stale_sections)
+            for section in existing_doc.sections:
+                if stale_map.get(section.title, True):
+                    title = section.title
+                    if title == "Architecture Overview":
+                        new_sections.append(self._generate_overview(analysis))
+                    elif title == "Module Reference":
+                        new_sections.append(DocSection(
+                            title="Module Reference",
+                            level=2,
+                            content=self._build_module_table(analysis),
+                            source_modules=[m.name for m in analysis.module_map],
+                        ))
+                    elif title == "Change History":
+                        new_sections.append(self._generate_timeline(analysis.commit_timeline))
+                    elif title == "Architectural Decisions":
+                        new_sections.append(self._generate_pr_section(analysis.pr_insights))
+                    else:
+                        new_sections.append(section)
+                else:
+                    new_sections.append(section)
+        else:
+            new_sections = existing_doc.sections
+
+        doc = Documentation(
+            repo_url=existing_doc.repo_url,
+            sections=new_sections,
+            source_hash=self._compute_hash(analysis),
+        )
+        save_doc_metadata(doc, doc_dir)
+        return doc

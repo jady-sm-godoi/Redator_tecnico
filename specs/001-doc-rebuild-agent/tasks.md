@@ -119,19 +119,19 @@ description: "Task list for Auto Documentation Rebuild Agent implementation"
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T039 [P] [US3] Unit test for change detection in tests/unit/test_change_detection.py
-- [ ] T040 [P] [US3] Unit test for incremental regeneration in tests/unit/test_incremental_update.py
-- [ ] T041 [US3] Integration test for check + update flow in tests/integration/test_staleness_flow.py
+- [X] T039 [P] [US3] Unit test for change detection in tests/unit/test_change_detection.py
+- [X] T040 [P] [US3] Unit test for incremental regeneration in tests/unit/test_incremental_update.py
+- [X] T041 [US3] Integration test for check + update flow in tests/integration/test_staleness_flow.py
 
 ### Implementation for User Story 3
 
-- [ ] T042 [US3] Store source_hash in generated doc metadata (_meta.json) for change detection
-- [ ] T043 [US3] Implement change detection in src/analyzers/structure.py (compare current tree hash vs stored hash)
-- [ ] T044 [US3] Wire CLI `check` command in src/cli/main.py (compare hashes, report stale sections)
-- [ ] T045 [US3] Implement incremental doc regeneration per FR-010 (regenerate only stale sections)
-- [ ] T046 [US3] Wire CLI `update` command in src/cli/main.py (incremental regeneration)
-- [ ] T047 [US3] Wire CLI `config` command in src/cli/main.py (view/edit config)
-- [ ] T048 [US3] Handle edge cases: first-time run with no hash, corrupted _meta.json, removed modules
+- [X] T042 [US3] Store source_hash in generated doc metadata (_meta.json) for change detection
+- [X] T043 [US3] Implement change detection in src/analyzers/structure.py (compare current tree hash vs stored hash)
+- [X] T044 [US3] Wire CLI `check` command in src/cli/main.py (compare hashes, report stale sections)
+- [X] T045 [US3] Implement incremental doc regeneration per FR-010 (regenerate only stale sections)
+- [X] T046 [US3] Wire CLI `update` command in src/cli/main.py (incremental regeneration)
+- [X] T047 [US3] Wire CLI `config` command in src/cli/main.py (view/edit config)
+- [X] T048 [US3] Handle edge cases: first-time run with no hash, corrupted _meta.json, removed modules
 
 **Checkpoint**: All user stories independently functional
 
