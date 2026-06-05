@@ -1,6 +1,6 @@
 from pathlib import Path
 from datetime import datetime
-from src.models.analysis import AnalysisResult
+from src.models.analysis import AnalysisResult, CommitEvent, PRInsight
 from src.models.documentation import Documentation, DocSection
 
 
@@ -18,12 +18,30 @@ Dependencies:
 
 Generate a Markdown section describing the architecture and module structure."""
 
+COMMIT_SECTION_PROMPT = """Based on the following git commit history, describe the evolution of this project:
+
+{timeline}
+
+Generate a Markdown section titled 'Change History' summarizing key developments."""
+
+PR_SECTION_PROMPT = """Based on the following Pull Requests / Merge Requests, describe the architectural decisions made:
+
+{insights}
+
+Generate a Markdown section titled 'Architectural Decisions' summarizing the key decisions and rationale."""
+
 
 class DocOrchestrator:
     def __init__(self, llm_client):
         self.llm = llm_client
 
-    def generate(self, analysis: AnalysisResult, repo_url: str) -> Documentation:
+    def generate(
+        self,
+        analysis: AnalysisResult,
+        repo_url: str,
+        include_history: bool = True,
+        include_prs: bool = True,
+    ) -> Documentation:
         sections: list[DocSection] = []
 
         overview_section = self._generate_overview(analysis)
@@ -36,6 +54,14 @@ class DocOrchestrator:
             source_modules=[m.name for m in analysis.module_map],
         )
         sections.append(modules_section)
+
+        if include_history and analysis.commit_timeline:
+            timeline_section = self._generate_timeline(analysis.commit_timeline)
+            sections.append(timeline_section)
+
+        if include_prs and analysis.pr_insights:
+            pr_section = self._generate_pr_section(analysis.pr_insights)
+            sections.append(pr_section)
 
         doc = Documentation(
             repo_url=repo_url,
@@ -71,6 +97,42 @@ class DocOrchestrator:
         for m in analysis.module_map[:50]:
             lines.append(f"| `{m.name}` | {m.type.value} | - |")
         return "\n".join(lines)
+
+    def _generate_timeline(self, commits: list[CommitEvent]) -> DocSection:
+        timeline = "\n".join(
+            f"- `{c.hash}` {c.date.strftime('%Y-%m-%d')} | {c.author} | "
+            f"[{c.significance.value}] {c.message[:80]}"
+            for c in commits[:50]
+        )
+        prompt = COMMIT_SECTION_PROMPT.format(timeline=timeline or "(no commits)")
+        content = self.llm.generate_documentation(prompt)
+        return DocSection(
+            title="Change History",
+            level=1,
+            content=content,
+            source_modules=["git_history"],
+        )
+
+    def _generate_pr_section(self, insights: list[PRInsight]) -> DocSection:
+        lines = []
+        for pr in insights[:30]:
+            lines.append(f"### PR #{pr.pr_number}: {pr.title}")
+            if pr.decision:
+                lines.append(f"- **Decision**: {pr.decision}")
+            if pr.rationale:
+                lines.append(f"- **Rationale**: {pr.rationale}")
+            lines.append(f"- **Date**: {pr.date.strftime('%Y-%m-%d') if pr.date else 'N/A'}")
+            lines.append("")
+        table = "\n".join(lines) if lines else "(no PR insights)"
+
+        prompt = PR_SECTION_PROMPT.format(insights=table)
+        content = self.llm.generate_documentation(prompt)
+        return DocSection(
+            title="Architectural Decisions",
+            level=1,
+            content=content,
+            source_modules=["pr_analyzer"],
+        )
 
     def _compute_hash(self, analysis: AnalysisResult) -> str:
         raw = f"{analysis.total_files}:{analysis.total_loc}:{len(analysis.module_map)}"

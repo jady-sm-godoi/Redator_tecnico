@@ -94,18 +94,18 @@ description: "Task list for Auto Documentation Rebuild Agent implementation"
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T030 [P] [US2] Unit test for git history analyzer in tests/unit/test_git_history.py
-- [ ] T031 [P] [US2] Unit test for PR analyzer in tests/unit/test_pr_analyzer.py
-- [ ] T032 [US2] Integration test for enriched generation in tests/integration/test_enriched_generation.py
+- [X] T030 [P] [US2] Unit test for git history analyzer in tests/unit/test_git_history.py
+- [X] T031 [P] [US2] Unit test for PR analyzer in tests/unit/test_pr_analyzer.py
+- [X] T032 [US2] Integration test for enriched generation in tests/integration/test_enriched_generation.py
 
 ### Implementation for User Story 2
 
-- [ ] T033 [P] [US2] Create CommitEvent model in src/models/analysis.py
-- [ ] T034 [P] [US2] Create PRInsight model in src/models/analysis.py
-- [ ] T035 [US2] Implement git history analyzer in src/analyzers/git_history.py (gitpython: commit iteration, diff analysis, significance classification)
-- [ ] T036 [US2] Implement PR analyzer in src/analyzers/pr_analyzer.py (PyGithub/python-gitlab: PR description, discussion, decision extraction)
-- [ ] T037 [US2] Extend doc generation orchestrator to incorporate commit timeline and PR insights into output
-- [ ] T038 [US2] Update CLI `generate` with `--include-prs` and `--include-history` flags (default: true)
+- [X] T033 [P] [US2] Create CommitEvent model in src/models/analysis.py
+- [X] T034 [P] [US2] Create PRInsight model in src/models/analysis.py
+- [X] T035 [US2] Implement git history analyzer in src/analyzers/git_history.py (gitpython: commit iteration, diff analysis, significance classification)
+- [X] T036 [US2] Implement PR analyzer in src/analyzers/pr_analyzer.py (PyGithub/python-gitlab: PR description, discussion, decision extraction)
+- [X] T037 [US2] Extend doc generation orchestrator to incorporate commit timeline and PR insights into output
+- [X] T038 [US2] Update CLI `generate` with `--include-prs` and `--include-history` flags (default: true)
 
 **Checkpoint**: User Story 1 AND 2 both functional independently
 

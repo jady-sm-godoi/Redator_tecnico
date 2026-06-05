@@ -9,6 +9,8 @@ from src.connectors.github import GitHubConnector
 from src.connectors.gitlab import GitLabConnector
 from src.models.repo import RepositoryConnection, Provider
 from src.analyzers.structure import StructureAnalyzer
+from src.analyzers.git_history import GitHistoryAnalyzer
+from src.analyzers.pr_analyzer import PRAnalyzer
 from src.generators.llm_client import GroqClient
 from src.generators.orchestrator import DocOrchestrator
 
@@ -83,6 +85,8 @@ def generate(
     repo_url: str = typer.Argument(..., help="Repository URL"),
     output: str = typer.Option("./docs", "--output", "-o", help="Output directory"),
     api_key: Optional[str] = typer.Option(None, "--api-key", envvar="GROQ_API_KEY", help="Groq API key"),
+    include_prs: bool = typer.Option(True, "--include-prs/--no-include-prs", help="Include PR analysis in docs"),
+    include_history: bool = typer.Option(True, "--include-history/--no-include-history", help="Include git history in docs"),
 ):
     """Generate documentation for a repository."""
     config = load_config()
@@ -134,8 +138,28 @@ def generate(
         if analysis.total_files == 0:
             typer.echo("Warning: No supported source files found.", err=True)
 
+        if include_history:
+            typer.echo("Analyzing git history...", err=True)
+            try:
+                git_analyzer = GitHistoryAnalyzer(repo_dir)
+                commits = git_analyzer.analyze(max_depth=repo_cfg.branch if hasattr(repo_cfg, 'max_commit_depth') else 1000)
+                analysis.commit_timeline = commits
+                typer.echo(f"Found {len(commits)} commits.", err=True)
+            except Exception as e:
+                typer.echo(f"Warning: Git history analysis failed: {e}", err=True)
+
+        if include_prs:
+            typer.echo("Analyzing pull requests...", err=True)
+            try:
+                pr_analyzer = PRAnalyzer(connector)
+                insights = pr_analyzer.analyze(token)
+                analysis.pr_insights = insights
+                typer.echo(f"Found {len(insights)} PRs/MRs.", err=True)
+            except Exception as e:
+                typer.echo(f"Warning: PR analysis failed: {e}", err=True)
+
         typer.echo("Generating documentation...", err=True)
-        doc = orchestrator.generate(analysis, repo_url)
+        doc = orchestrator.generate(analysis, repo_url, include_history=include_history, include_prs=include_prs)
 
         output_path = Path(output)
         output_path.mkdir(parents=True, exist_ok=True)

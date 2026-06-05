@@ -57,7 +57,7 @@ class PRInsight(BaseModel):
     description: str
     decision: str | None = None
     rationale: str | None = None
-    date: datetime
+    date: datetime | None = None
 
 
 class AnalysisResult(BaseModel):
