@@ -120,7 +120,7 @@ Estima-se que desenvolvedores gastem **20-30% do tempo** criando e mantendo docu
 ### Pré-requisitos
 
 - **Python 3.12+** instalado (`python --version`)
-- **Token de acesso** do GitHub (Settings → Developer settings → Personal access tokens) ou GitLab (Preferences → Access Tokens)
+- **Token de acesso** do GitHub ([`github.com/settings/tokens`](https://github.com/settings/tokens)) ou GitLab ([`gitlab.com/-/user_settings/personal_access_tokens`](https://gitlab.com/-/user_settings/personal_access_tokens))
 - **Chave de API** do Groq ([console.groq.com](https://console.groq.com) — plano gratuito disponível)
 
 ### Instalação via pip
@@ -151,6 +151,63 @@ doc-rebuild --help
 
 ---
 
+## 🔑 Obtendo um token de acesso
+
+O `doc-rebuild init` precisa de um token para clonar o repositório e ler PRs/commits. Escolha seu provedor:
+
+### GitHub
+
+```
+Settings (ícone de engrenagem ⚙ no canto superior direito)
+  └─ Developer settings (última opção)
+       └─ Personal access tokens
+            └─ Tokens (classic)
+                 └─ Generate new token (classic)
+```
+
+1. Acesse **[github.com/settings/tokens](https://github.com/settings/tokens)**
+2. Clique **Generate new token (classic)**
+3. Dê um nome descritivo (ex: "doc-rebuild")
+4. Em **Scopes**, marque apenas **`repo`** (acesso total a repositórios privados) ou, para repositórios públicos, apenas **`public_repo`** (dentro de `repo`)
+5. Role até o final e clique **Generate token**
+6. **Copie o token imediatamente** — o GitHub mostra ele apenas uma vez. Começa com `ghp_`
+
+```bash
+doc-rebuild init https://github.com/meu-time/projeto-x
+# Access token: [cole o token ghp_... — não aparece na tela enquanto digita]
+```
+
+### GitLab
+
+```
+Preferences (ícone de usuário → Preferences no menu)
+  └─ Access Tokens
+       └─ Add new token
+```
+
+1. Acesse **[gitlab.com/-/user_settings/personal_access_tokens](https://gitlab.com/-/user_settings/personal_access_tokens)**
+2. Dê um nome (ex: "doc-rebuild")
+3. Marque **Expiration date** para segurança (ex: 1 ano)
+4. Em **Select scopes**, marque:
+   - **`read_api`** — necessário para ler PRs (Merge Requests)
+   - **`read_repository`** — necessário para clonar o repositório
+5. Clique **Create personal access token**
+6. **Copie o token** — também mostrado apenas uma vez. Começa com `glpat_`
+
+```bash
+doc-rebuild init https://gitlab.com/meu-time/projeto-x
+# Access token: [cole o token glpat_...]
+```
+
+### Dicas de segurança
+
+- Use o **menor escopo possível**: `public_repo` para projetos públicos, `repo` para privados
+- Defina uma **data de expiração** (renew a cada ano)
+- **Nunca compartilhe** seu token — ele dá acesso ao seu repositório
+- O `doc-rebuild init` armazena o token **criptografado** em disco (AES-128 via Fernet), nunca em texto puro
+
+---
+
 ## Uso
 
 ### 1. `init` — Inicializar repositório
@@ -159,7 +216,7 @@ Antes de gerar documentação, é preciso configurar o repositório. Isso armaze
 
 ```bash
 doc-rebuild init https://github.com/meu-time/projeto-x
-# Access token: [você digita o token — não aparece na tela]
+# Access token: [cole o token — não aparece na tela]
 # ✅ Initialized repo: https://github.com/meu-time/projeto-x (branch: main)
 ```
 
@@ -379,30 +436,34 @@ redator-tecnico/
 ├── README.md                   ← Este arquivo
 ├── AGENTS.md                   ← Configuração do assistente de IA
 ├── constitution.md             ← Regras de governança do projeto
+├── main.py                     ← Entry point alternativo (python main.py)
 │
-├── src/                        ← Código fonte
-│   ├── cli/                    ← Interface de linha de comando
-│   │   ├── main.py             ←   Comandos Typer (init, generate, list, check, update, config)
-│   │   └── output.py           ←   Funções de saída padronizadas (stdout/stderr)
-│   ├── connectors/             ← Conexão com provedores Git
-│   │   ├── base.py             ←   Interface abstrata do conector
-│   │   ├── github.py           ←   Conector GitHub (PyGithub + GitPython)
-│   │   ├── gitlab.py           ←   Conector GitLab (python-gitlab + GitPython)
-│   │   └── utils.py            ←   Utilitários: retry com backoff + rate-limit check
-│   ├── analyzers/              ← Análise de código
-│   │   ├── structure.py        ←   Analisador de estrutura (tree-sitter + AST)
-│   │   ├── git_history.py      ←   Analisador de histórico de commits
-│   │   └── pr_analyzer.py      ←   Analisador de PRs/MRs
-│   ├── generators/             ← Geração de documentação
-│   │   ├── llm_client.py       ←   Cliente Groq (Llama 3 70B)
-│   │   └── orchestrator.py     ←   Orquestrador (análise → LLM → Markdown)
-│   ├── models/                 ← Modelos de dados (Pydantic)
-│   │   ├── repo.py             ←   RepositoryConnection, Provider, CredentialConfig
-│   │   ├── analysis.py         ←   Module, Dependency, CommitEvent, PRInsight, AnalysisResult
-│   │   └── documentation.py    ←   Documentation, DocSection, DocMetadata, ChangelogEntry
-│   └── config/                 ← Configuração e segurança
-│       ├── settings.py         ←   Gerenciamento de config.yml
-│       └── crypto.py           ←   Criptografia Fernet (AES-128) para tokens
+├── src/                        ← Código fonte (raiz do pacote)
+│   ├── __init__.py
+│   └── redator_tecnico/        ← Pacote Python importável
+│       ├── __init__.py
+│       ├── cli/                ← Interface de linha de comando
+│       │   ├── main.py         ←   Comandos Typer (init, generate, list, check, update, config)
+│       │   └── output.py       ←   Funções de saída padronizadas (stdout/stderr)
+│       ├── connectors/         ← Conexão com provedores Git
+│       │   ├── base.py         ←   Interface abstrata do conector
+│       │   ├── github.py       ←   Conector GitHub (PyGithub + GitPython)
+│       │   ├── gitlab.py       ←   Conector GitLab (python-gitlab + GitPython)
+│       │   └── utils.py        ←   Utilitários: retry com backoff + rate-limit check
+│       ├── analyzers/          ← Análise de código
+│       │   ├── structure.py    ←   Analisador de estrutura (tree-sitter + AST)
+│       │   ├── git_history.py  ←   Analisador de histórico de commits
+│       │   └── pr_analyzer.py  ←   Analisador de PRs/MRs
+│       ├── generators/         ← Geração de documentação
+│       │   ├── llm_client.py   ←   Cliente Groq (Llama 3 70B)
+│       │   └── orchestrator.py ←   Orquestrador (análise → LLM → Markdown)
+│       ├── models/             ← Modelos de dados (Pydantic)
+│       │   ├── repo.py         ←   RepositoryConnection, Provider, CredentialConfig
+│       │   ├── analysis.py     ←   Module, Dependency, CommitEvent, PRInsight, AnalysisResult
+│       │   └── documentation.py←   Documentation, DocSection, DocMetadata, ChangelogEntry
+│       └── config/             ← Configuração e segurança
+│           ├── settings.py     ←   Gerenciamento de config.yml
+│           └── crypto.py       ←   Criptografia Fernet (AES-128) para tokens
 │
 ├── tests/                      ← Testes
 │   ├── unit/                   ←   Testes unitários (10 arquivos, 52 testes)
@@ -426,7 +487,7 @@ O projeto segue **TDD (Test-Driven Development)** — testes são escritos antes
 pytest
 
 # Com cobertura
-pytest --cov=src
+pytest --cov=src/redator_tecnico
 
 # Testes específicos
 pytest tests/unit/test_connectors.py -v
