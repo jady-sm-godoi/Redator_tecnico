@@ -157,24 +157,17 @@ O `doc-rebuild init` precisa de um token para clonar o repositório e ler PRs/co
 
 ### GitHub
 
-```
-Settings (ícone de engrenagem ⚙ no canto superior direito)
-  └─ Developer settings (última opção)
-       └─ Personal access tokens
-            └─ Tokens (classic)
-                 └─ Generate new token (classic)
-```
-
 1. Acesse **[github.com/settings/tokens](https://github.com/settings/tokens)**
 2. Clique **Generate new token (classic)**
-3. Dê um nome descritivo (ex: "doc-rebuild")
-4. Em **Scopes**, marque apenas **`repo`** (acesso total a repositórios privados) ou, para repositórios públicos, apenas **`public_repo`** (dentro de `repo`)
+3. Dê um nome (ex: "doc-rebuild")
+4. Em **Scopes**, marque apenas **`repo`** (se for repositório privado) ou apenas **`public_repo`** (se for público)
 5. Role até o final e clique **Generate token**
-6. **Copie o token imediatamente** — o GitHub mostra ele apenas uma vez. Começa com `ghp_`
+6. **Copie o token** — começa com `ghp_...` e só aparece uma vez
 
 ```bash
 doc-rebuild init https://github.com/meu-time/projeto-x
-# Access token: [cole o token ghp_... — não aparece na tela enquanto digita]
+# Access token: [cole o token ghp_... — não aparece na tela]
+✅ Initialized repo: https://github.com/meu-time/projeto-x (branch: main)
 ```
 
 ### GitLab
