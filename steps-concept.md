@@ -417,7 +417,7 @@ class RepoConfig(BaseModel):
     sub_path: str | None = None       # Sub-pasta em monorepo
 
 class LLMConfig(BaseModel):
-    model: str = "llama3-70b-8192"    # Modelo Groq
+    model: str = "llama-3.3-70b-versatile"    # Modelo Groq
     temperature: float = 0.3          # Criatividade (0 = deterministico, 1 = criativo)
     max_tokens: int = 8192            # Maximo de tokens por chamada
 
@@ -468,7 +468,7 @@ generation:
   include_history: true
   max_commit_depth: 1000
   llm:
-    model: llama3-70b-8192
+    model: llama-3.3-70b-versatile
     temperature: 0.3
     max_tokens: 8192
 ```
@@ -944,7 +944,7 @@ Wrapper simples em torno do SDK oficial da Groq:
 
 ```python
 class GroqClient:
-    def __init__(self, api_key: str, model="llama3-70b-8192", temperature=0.3):
+    def __init__(self, api_key: str, model="llama-3.3-70b-versatile", temperature=0.3):
         self.client = Groq(api_key=api_key)
         self.model = model
         self.temperature = temperature
@@ -2012,7 +2012,7 @@ Generation settings:
   Include PRs:      True
   Include history:  True
   Max commits:      1000
-  LLM model:        llama3-70b-8192
+  LLM model:        llama-3.3-70b-versatile
   Temperature:      0.3
 ```
 

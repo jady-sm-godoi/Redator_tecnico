@@ -17,7 +17,7 @@ class RepoConfig(BaseModel):
 
 
 class LLMConfig(BaseModel):
-    model: str = "llama3-70b-8192"
+    model: str = "llama-3.3-70b-versatile"
     temperature: float = 0.3
     max_tokens: int = 8192
 

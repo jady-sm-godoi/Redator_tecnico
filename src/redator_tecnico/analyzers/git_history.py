@@ -18,11 +18,14 @@ class GitHistoryAnalyzer:
         for i, commit in enumerate(self.repo.iter_commits()):
             if i >= max_depth:
                 break
-            files_changed = list(
-                {item.b_path for item in commit.diff(commit.parents[0]) if item.b_path}
-                if commit.parents
-                else {item.b_path for item in commit.diff(None) if item.b_path}
-            )
+            try:
+                files_changed = list(
+                    {item.b_path for item in commit.diff(commit.parents[0]) if item.b_path}
+                    if commit.parents
+                    else {item.b_path for item in commit.diff(None) if item.b_path}
+                )
+            except Exception:
+                files_changed = []
             commits.append(
                 CommitEvent(
                     hash=commit.hexsha[:8],

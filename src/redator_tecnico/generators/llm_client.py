@@ -1,7 +1,7 @@
 from groq import Groq
 
 
-DEFAULT_MODEL = "llama3-70b-8192"
+DEFAULT_MODEL = "llama-3.3-70b-versatile"
 
 
 class GroqClient:

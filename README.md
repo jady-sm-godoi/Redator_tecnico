@@ -383,7 +383,7 @@ doc-rebuild config-view
 #   Include PRs:      True
 #   Include history:  True
 #   Max commits:      1000
-#   LLM model:        llama3-70b-8192
+#   LLM model:        llama-3.3-70b-versatile
 #   Temperature:      0.3
 ```
 
