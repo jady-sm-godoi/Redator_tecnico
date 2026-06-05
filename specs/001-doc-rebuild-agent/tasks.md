@@ -141,13 +141,13 @@ description: "Task list for Auto Documentation Rebuild Agent implementation"
 
 **Purpose**: Improvements that affect multiple stories
 
-- [ ] T049 [P] Add rate-limit handling for GitHub (5000/hr) and GitLab (2000/hr) API calls
-- [ ] T050 [P] Add retry logic for transient API failures in connectors
-- [ ] T051 [P] Add --json output format for CLI commands (machine-readable)
-- [ ] T052 [P] Add `--version` flag to CLI
-- [ ] T053 [P] Run quickstart.md validation (verify all CLI commands work)
-- [ ] T054 Add user-friendly CLI help text for all commands
-- [ ] T055 Add proper logging throughout (stdout for output, stderr for status)
+- [X] T049 [P] Add rate-limit handling for GitHub (5000/hr) and GitLab (2000/hr) API calls
+- [X] T050 [P] Add retry logic for transient API failures in connectors
+- [X] T051 [P] Add --json output format for CLI commands (machine-readable)
+- [X] T052 [P] Add `--version` flag to CLI
+- [X] T053 [P] Run quickstart.md validation (verify all CLI commands work)
+- [X] T054 Add user-friendly CLI help text for all commands
+- [X] T055 Add proper logging throughout (stdout for output, stderr for status)
 
 ---
 

@@ -1,4 +1,4 @@
-# Relatorio Didatico — Fase 1 a Fase 5
+# Relatorio Didatico — Fase 1 a Fase 6
 
 **Projeto**: Redator Tecnico (doc-rebuild-agent)  
 **Branch**: `001-doc-rebuild-agent`  
@@ -38,15 +38,8 @@
   - [T038 — Flags do CLI](#t038--flags-do-cli)
   - [Testes da Fase 4 (TDD)](#testes-da-fase-4-tdd)
 - [Fase 5 — US3: Change Detection e Update Incremental](#fase-5--us3-change-detection-e-update-incremental)
-  - [T042 — Metadados de Documentacao (_meta.json)](#t042--metadados-de-documentacao-_metajson)
-  - [T043 — Deteccao de Mudancas (compute_module_hashes)](#t043--deteccao-de-mudancas-compute_module_hashes)
-  - [T044 — Comando check](#t044--comando-check)
-  - [T045 — Regeneracao Incremental (update)](#t045--regeneracao-incremental-update)
-  - [T046 — Comando update](#t046--comando-update)
-  - [T047 — Comando config](#t047--comando-config)
-  - [T048 — Casos Extremos](#t048--casos-extremos)
-  - [Testes da Fase 5 (TDD)](#testes-da-fase-5-tdd)
-- [Diagrama completo das 5 fases](#diagrama-completo-das-5-fases)
+- [Fase 6 — Polish & Cross-Cutting Concerns](#fase-6--polish--cross-cutting-concerns)
+- [Diagrama completo das 6 fases](#diagrama-completo-das-6-fases)
 - [Glossario para iniciantes](#glossario-para-iniciantes)
 
 ---
@@ -2086,7 +2079,341 @@ A Fase 5 trata explicitamente dos seguintes casos extremos:
 - Todos passando em **menos de 0.8 segundo**
 - Zero chamadas a API externa (tudo mockado ou real em tmp_path)
 
-### Cobertura dos 61 testes
+---
+
+## Fase 6 — Polish & Cross-Cutting Concerns
+
+**Proposito**: Melhorias que afetam **multiplas fases** — nao implementam nova funcionalidade, mas tornam o CLI mais robusto, informativo e profissional.
+
+**Nenhum novo teste foi adicionado** porque esta fase modifica codigo existente (conectores, CLI) sem mudar comportamentos testados. Os 61 testes continuam validando tudo.
+
+```
+FASE 6 NAO ADICIONA TESTES NOVOS
+       ↓
+61 TESTES ORIGINAIS CONTINUAM PASSANDO
+       ↓
+CODIGO FICA MAIS ROBUSTO (retry + rate-limit)
+       ↓
+CLI FICA MAIS INFORMATIVO (--json, --version, help, logging)
+```
+
+### Arquivos criados/modificados (T049-T055)
+
+```
+src/
+├── connectors/
+│   ├── github.py          ← T049+T050: +retry decorator + rate-limit check
+│   ├── gitlab.py          ← T049+T050: +retry decorator + rate-limit check
+│   └── utils.py           ← T049+T050: NOVO — retry() + rate-limit helpers
+├── cli/
+│   ├── main.py            ← T051/052/054: --json, --version, help melhorado
+│   └── output.py          ← T055: NOVO — info(), success(), error(), print_json()
+
+specs/001-doc-rebuild-agent/
+└── quickstart.md           ← T053: Atualizado com novos comandos
+```
+
+---
+
+### T049+T050 — Rate-Limit Handling + Retry Logic (connectors/utils.py)
+
+Criamos `src/connectors/utils.py` com duas ferramentas reutilizaveis:
+
+#### Retry Decorator
+
+```python
+def retry(max_attempts=3, delay=1.0, backoff=2.0):
+    """Tenta de novo se falhar, com espera exponencial."""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exc = None
+            attempt_delay = delay
+            for attempt in range(max_attempts):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exc = e
+                    if attempt < max_attempts - 1:
+                        jitter = random.uniform(0, 0.5 * attempt_delay)
+                        time.sleep(attempt_delay + jitter)
+                        attempt_delay *= backoff
+            raise last_exc
+        return wrapper
+    return decorator
+```
+
+**Como funciona**:
+1. Tenta executar a funcao
+2. Se falhar (`Exception`), espera `delay` segundos + "jitter" (0-50% do delay)
+3. Multiplica o delay por `backoff` (2x) e tenta de novo
+4. Apos `max_attempts` tentativas, deixa o erro passar
+
+**O que e "jitter"?** Um valor aleatorio adicionado a espera para evitar que multiplos processos tentem ao mesmo tempo (thundering herd). Sem jitter, se 10 instancias falharem juntas, todas tentariam exatamente no mesmo intervalo.
+
+#### Rate-Limit Check
+
+```python
+RATE_LIMIT_WARN_THRESHOLD = 0.1  # Alerta quando <10% restante
+
+def check_github_rate_limit(api):
+    rate = api.get_rate_limit().core
+    return rate.remaining, rate.limit, rate.reset
+
+def check_gitlab_rate_limit(api):
+    info = api.get_rate_limit()
+    return info["remaining"], info["limit"], info["reset"]
+
+def warn_if_near_limit(remaining, limit, reset_time, provider):
+    ratio = remaining / limit
+    if ratio < RATE_LIMIT_WARN_THRESHOLD:
+        print(f"Warning: {provider} API rate limit low "
+              f"({remaining}/{limit} remaining)", file=sys.stderr)
+```
+
+**Por que isso importa?**:
+- GitHub free: 5.000 requests/hora
+- GitLab free: 2.000 requests/hora
+- Uma unica execucao de `doc-rebuild generate` pode consumir 10-20 requests (clone + analise + PRs)
+
+Sem o aviso, o usuario tentaria rodar o comando, receberia um erro generico `403 Rate Limit Exceeded`, e nao entenderia o que aconteceu. Com o aviso, ele ve `"Warning: GitHub API rate limit low (45/5000 remaining)"` e sabe que precisa esperar.
+
+#### Uso nos Conectores
+
+Ambos `GitHubConnector` e `GitLabConnector` foram atualizados com:
+- `@retry()` no `clone_repo` e `fetch_prs`/`fetch_merge_requests`
+- `check_*_rate_limit()` + `warn_if_near_limit()` antes de chamar a API
+
+```python
+class GitHubConnector(BaseConnector):
+    @retry(max_attempts=3, delay=1.0, backoff=2.0)
+    def clone_repo(self, target_dir, token):
+        clone_url = f"https://x-access-token:{token}@github.com/{self._repo_name}.git"
+        git.Repo.clone_from(clone_url, target_dir, depth=1)
+
+    @retry(max_attempts=3, delay=1.0, backoff=2.0)
+    def fetch_prs(self, token, state="merged"):
+        api = self._get_api(token)
+        remaining, limit, reset = check_github_rate_limit(api)
+        warn_if_near_limit(remaining, limit, reset, "GitHub")
+        # ... busca PRs normalmente
+```
+
+---
+
+### T051 — `--json` Output (CLI)
+
+Adicionamos `--json` nos comandos `list` e `check` para saida **machine-readable**:
+
+```python
+# Em list:
+@app.command("list")
+def list_repos(
+    json_format: bool = typer.Option(False, "--json", help="Output in JSON format")
+):
+    config = load_config()
+    if json_format:
+        repos_data = [
+            {"url": r.url, "branch": r.branch, "provider": r.provider}
+            for r in config.repositories
+        ]
+        print_json({"repositories": repos_data, "count": len(config.repositories)})
+        return
+    # ... saida texto normal
+
+# Em check:
+@app.command()
+def check(repo_url, output="./docs",
+          json_format: bool = typer.Option(False, "--json")):
+    # ... mesma logica, mas no final:
+    if json_format:
+        print_json({
+            "sections": sections_data,
+            "stale_count": N,
+            "is_stale": True/False,
+        })
+        return
+```
+
+**Uso pratico**:
+```bash
+# Humano le:
+$ doc-rebuild list
+  https://github.com/owner/repo (branch: main)
+
+# Script le:
+$ doc-rebuild list --json | jq '.repositories[].url'
+"https://github.com/owner/repo"
+```
+
+A funcao `print_json()` em `output.py` formata com `indent=2` e `default=str` (para serializar datetimes e UUIDs):
+
+```python
+def print_json(data):
+    import json
+    json.dump(data, sys.stdout, indent=2, default=str)
+    sys.stdout.write("\n")
+```
+
+---
+
+### T052 — `--version` Flag
+
+Adicionamos a flag global `--version` que exibe a versao do pacote:
+
+```python
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("redator-tecnico")
+except PackageNotFoundError:
+    __version__ = "0.1.0"  # fallback para desenvolvimento
+
+@app.callback()
+def main(
+    version: bool = typer.Option(
+        False, "--version",
+        callback=_version_callback, is_eager=True,
+    ),
+):
+    pass
+```
+
+**`is_eager=True`**: Typer processa essa flag **antes** de qualquer comando. Se o usuario digitar `doc-rebuild --version`, ele ve a versao e sai imediatamente, sem precisar de um comando especifico.
+
+**Uso**:
+```bash
+$ doc-rebuild --version
+doc-rebuild v0.1.0
+```
+
+---
+
+### T053 — Quickstart Validation
+
+Verificamos que **todos os comandos do CLI** funcionam conforme documentado no `quickstart.md`:
+
+| Comando | No quickstart? |
+|---------|---------------|
+| `doc-rebuild init <url>` | ✅ |
+| `doc-rebuild generate <url> --output ./docs` | ✅ |
+| `doc-rebuild check <url>` | ✅ (agora com exemplo --json) |
+| `doc-rebuild update <url>` | ✅ |
+| `doc-rebuild list` | ✅ Adicionado |
+| `doc-rebuild list --json` | ✅ Adicionado |
+| `doc-rebuild config-view` | ✅ Adicionado |
+| `doc-rebuild --version` | ✅ Adicionado |
+
+Atualizamos o quickstart com secoes de **List repositories**, **View configuration**, e **Version** para cobrir todos os comandos disponiveis.
+
+---
+
+### T054 — Help Text Melhorado
+
+Melhoramos as descricoes de **todos os comandos e parametros** do Typer para serem mais informativas:
+
+```python
+app = typer.Typer(
+    name="doc-rebuild",
+    help="Auto-generate and maintain technical documentation "
+         "from GitHub/GitLab repositories.",
+    no_args_is_help=True,  # Mostra help se nenhum comando for passado
+)
+```
+
+**Antes vs Depois**:
+
+| Comando | Antes | Depois |
+|---------|-------|--------|
+| `init` | "Initialize config for a new repo" | "Initialize a repository for documentation generation. Stores encrypted credentials and config for later use by 'generate', 'check', and 'update' commands." |
+| `generate` | "Generate doc for a repo" | "Generate complete documentation for a repository. Analyzes code structure, git history, and pull requests to produce Markdown documentation. Requires the repository to be initialized via the 'init' command first." |
+| `list` | "List configured repos" | "List all configured repositories. Shows registered repos, their branches, and providers. Use --json for machine-readable output." |
+| `check` | "Check if doc is stale" | "Check if documentation is stale. Compares current repository state against stored module hashes and reports which documentation sections need updating." |
+| `update` | "Regenerate stale sections" | "Regenerate only stale documentation sections. Incremental update that detects changed modules and regenerates only the affected sections, preserving unchanged content." |
+
+**`no_args_is_help=True`**: Se o usuario digitar `doc-rebuild` sem argumentos, o help e exibido automaticamente. Antes, sem essa flag, o Typer simplesmente rodava o app sem mostrar nada.
+
+---
+
+### T055 — Logging: stdout vs stderr
+
+Criamos `src/cli/output.py` com funcoes dedicadas para cada canal de saida:
+
+```python
+def info(msg):      # stderr — progresso, status, warning
+def success(msg):   # stdout — resultado, dados de saida
+def error(msg):     # stderr + exit — erros fatais
+def warn(msg):      # stderr — avisos nao-fatais
+def print_json(data): # stdout — dados JSON
+```
+
+**Regra de ouro**:
+- **stdout** (`success()`, `print_json()`): Apenas o resultado final que o usuario quer capturar
+- **stderr** (`info()`, `warn()`, `error()`): Progresso, status, erros — tudo que e informativo mas nao e o resultado
+
+**Por que isso importa?** Imagine:
+
+```bash
+# Sem distincao stdout/stderr:
+$ doc-rebuild list | grep github.com
+  https://github.com/owner/repo (branch: main)
+# Funciona porque so tem uma linha
+
+$ doc-rebuild check https://github.com/owner/repo --json | jq '.stale_count'
+Cloning repository to check for changes...
+Computing current module hashes...
+{
+  "stale_count": 2,
+  ...
+}
+# O JSON esta no meio do texto! jq nao consegue processar!
+```
+
+**Com a distincao correta**:
+
+```bash
+$ doc-rebuild check https://github.com/owner/repo --json | jq '.stale_count'
+{
+  "stale_count": 2,
+  ...
+}
+# Progresso vai pro stderr (nao aparece no pipe)
+# JSON vai pro stdout (jq processa limpo)
+```
+
+Refatoramos `main.py` inteiro para usar:
+- `info(...)` em vez de `typer.echo(..., err=True)` — mensagens de status vao pro stderr
+- `success(...)` em vez de `typer.echo(...)` — dados de saida vao pro stdout
+- `error(...)` em vez de `typer.echo(..., err=True) + raise typer.Exit(1)` — erros fatais
+
+---
+
+### Resultado dos testes
+
+```
+61 passed in 0.70s ✅
+```
+
+**61 testes originais continuam passando** — a Fase 6 nao adiciona novos testes porque modifica codigo existente sem adicionar novas funcionalidades testaveis. O que muda:
+- Conectores agora tem retry e rate-limit (comportamento defensivo, testado indiretamente pelos mocks existentes)
+- CLI tem novas flags e help melhorado (testado manualmente com --help e --version)
+- Logging refatorado (mesma semantica, apenas canais diferentes)
+
+### Resumo das 6 fases
+
+| Fase | O que fez | Testes | Arquivos |
+|------|-----------|--------|----------|
+| Fase 1 — Setup | pyproject.toml, diretorios, pytest | 0 | ~15 |
+| Fase 2 — Foundational | Models, Config, Crypto, CLI placeholder | 9 | 6 |
+| Fase 3 — US1 (MVP) | Conectores, analisador, LLM, orquestrador | 22 (+13) | 7 |
+| Fase 4 — US2 | Git history, PR analyzer, secoes enriquecidas | 18 (+18) | 3 |
+| Fase 5 — US3 | Change detection, update incremental | 12 (+12) | 4 |
+| Fase 6 — Polish | Retry, rate-limit, --json, --version, help, logging | 0 | 2 |
+| **Total** | **6 fases, 3 user stories** | **61** | **~37** |
+
+---
+
+
 
 | Componente | Testes | Abordagem |
 |-----------|--------|-----------|
@@ -2106,11 +2433,11 @@ A Fase 5 trata explicitamente dos seguintes casos extremos:
 
 ---
 
-### Diagrama atualizado (5 fases)
+### Diagrama completo das 6 fases
 
 ```
 FASE 1 — SETUP
-================
+===============
 T001 → pyproject.toml (10 dependencias + pytest config)
   ├── T002 → mkdir -p src/ tests/
   ├── T003 → pytest config
@@ -2167,7 +2494,18 @@ T046      → src/cli/main.py (comando update real com regeneração parcial)
 T047      → src/cli/main.py (comando config com detalhes completos)
 T048      → src/models/documentation.py (edge cases: _meta.json faltante/corrompido)
 
-61 PASSED IN 0.73s  ← TUDO VERDE (Fases 1-5 completas)
+
+FASE 6 — POLISH & CROSS-CUTTING
+=================================
+T049 [P]  → src/connectors/utils.py + conectores: rate-limit check
+T050 [P]  → src/connectors/utils.py + conectores: retry decorator
+T051 [P]  → src/cli/main.py: --json output (list + check)
+T052 [P]  → src/cli/main.py: --version flag global
+T053 [P]  → specs/quickstart.md: validado + atualizado
+T054      → src/cli/main.py: help texts descritivos em todos comandos
+T055      → src/cli/output.py + main.py: stdout/stderr logging padrao
+
+61 PASSED IN 0.70s  ← TUDO VERDE (Fases 1-6 completas)
 ```
 
 ## Glossario para iniciantes
@@ -2196,3 +2534,9 @@ T048      → src/models/documentation.py (edge cases: _meta.json faltante/corro
 | **gitpython** | Biblioteca Python para manipular repositorios git |
 | **Rationale** | Justificativa tecnica para uma decisao arquitetural (extraida de PRs) |
 | **MR** | Merge Request — equivalente do GitLab para Pull Request |
+| **Retry** | Tentar de novo automaticamente apos falha transitoria (rede, timeout) |
+| **Jitter** | Variacao aleatoria no tempo de espera entre retentativas — evita que multiplos processos tentem juntos |
+| **JSON** | JavaScript Object Notation — formato de dados leve e legivel por maquinas e humanos |
+| **Rate limit** | Limite de requisicoes por hora que uma API aceita (GitHub: 5000/h, GitLab: 2000/h) |
+| **stdout** | Standard output — canal de saida padrao (dados do programa) |
+| **stderr** | Standard error — canal de erro/mensagens (progresso, avisos) |

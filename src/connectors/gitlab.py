@@ -2,6 +2,7 @@ from pathlib import Path
 import git
 import gitlab
 from src.connectors.base import BaseConnector
+from src.connectors.utils import retry, check_gitlab_rate_limit, warn_if_near_limit
 from src.models.repo import RepositoryConnection
 
 
@@ -16,6 +17,7 @@ class GitLabConnector(BaseConnector):
             self._api = gitlab.Gitlab("https://gitlab.com", private_token=token)
         return self._api
 
+    @retry(max_attempts=3, delay=1.0, backoff=2.0)
     def clone_repo(self, target_dir: Path, token: str) -> None:
         clone_url = f"https://oauth2:{token}@gitlab.com/{self._project_path}.git"
         git.Repo.clone_from(clone_url, target_dir, depth=1)
@@ -37,8 +39,11 @@ class GitLabConnector(BaseConnector):
     def get_default_branch(self) -> str:
         return self.connection.branch
 
+    @retry(max_attempts=3, delay=1.0, backoff=2.0)
     def fetch_merge_requests(self, token: str, state: str = "merged") -> list[dict]:
         api = self._get_api(token)
+        remaining, limit, reset_time = check_gitlab_rate_limit(api)
+        warn_if_near_limit(remaining, limit, reset_time, "GitLab")
         project = api.projects.get(self._project_path)
         mrs = project.mergerequests.list(state=state)
         results = []

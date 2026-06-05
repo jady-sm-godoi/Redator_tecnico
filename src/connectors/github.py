@@ -2,6 +2,7 @@ from pathlib import Path
 import git
 from github import Github
 from src.connectors.base import BaseConnector
+from src.connectors.utils import retry, check_github_rate_limit, warn_if_near_limit
 from src.models.repo import RepositoryConnection
 
 
@@ -16,6 +17,7 @@ class GitHubConnector(BaseConnector):
             self._api = Github(token)
         return self._api
 
+    @retry(max_attempts=3, delay=1.0, backoff=2.0)
     def clone_repo(self, target_dir: Path, token: str) -> None:
         clone_url = f"https://x-access-token:{token}@github.com/{self._repo_name}.git"
         git.Repo.clone_from(clone_url, target_dir, depth=1)
@@ -37,8 +39,11 @@ class GitHubConnector(BaseConnector):
     def get_default_branch(self) -> str:
         return self.connection.branch
 
+    @retry(max_attempts=3, delay=1.0, backoff=2.0)
     def fetch_prs(self, token: str, state: str = "merged") -> list[dict]:
         api = self._get_api(token)
+        remaining, limit, reset_time = check_github_rate_limit(api)
+        warn_if_near_limit(remaining, limit, reset_time, "GitHub")
         repo = api.get_repo(self._repo_name)
         prs = repo.get_pulls(state=state)
         results = []

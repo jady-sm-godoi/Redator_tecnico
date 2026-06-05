@@ -32,13 +32,38 @@ Output: Markdown files in `./docs/` with architecture overview, module docs, des
 
 ```bash
 doc-rebuild check https://github.com/owner/repo
-# Exit 0 = up to date, 1 = stale sections
+```
+
+Sections shown as `[STALE]` or `[FRESH]`. Use `--json` for machine-readable output.
+
+```bash
+doc-rebuild check https://github.com/owner/repo --json
 ```
 
 ### 4. Update stale sections
 
 ```bash
 doc-rebuild update https://github.com/owner/repo
+```
+
+### 5. List repositories
+
+```bash
+doc-rebuild list
+# or machine-readable:
+doc-rebuild list --json
+```
+
+### 6. View configuration
+
+```bash
+doc-rebuild config-view
+```
+
+### 7. Version
+
+```bash
+doc-rebuild --version
 ```
 
 ## Configuration
