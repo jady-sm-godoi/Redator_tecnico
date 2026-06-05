@@ -1,4 +1,4 @@
-# Relatorio Didatico — Fase 1 + Fase 2
+# Relatorio Didatico — Fase 1 a Fase 4
 
 **Projeto**: Redator Tecnico (doc-rebuild-agent)  
 **Branch**: `001-doc-rebuild-agent`  
@@ -22,7 +22,22 @@
   - [T010 — Criptografia de Tokens (crypto.py)](#t010--criptografia-de-tokens-cryptopy)
   - [T011 — Esqueleto do CLI (main.py)](#t011--esqueleto-do-cli-mainpy)
   - [T012+T013 — Testes (TDD)](#t012t013--testes-tdd)
-- [Diagrama completo das 2 fases](#diagrama-completo-das-2-fases)
+- [Fase 3 — US1: MVP (Conectar + Analisar + Gerar)](#fase-3--us1-mvp-conectar--analisar--gerar)
+  - [T019 — Interface dos Conectores (base.py)](#t019--interface-dos-conectores-basepy)
+  - [T020 — Conector GitHub (github.py)](#t020--conector-github-githubpy)
+  - [T021 — Conector GitLab (gitlab.py)](#t021--conector-gitlab-gitlabpy)
+  - [T022 — Analisador de Estrutura (structure.py)](#t022--analisador-de-estrutura-structurepy)
+  - [T023 — Cliente Groq (llm_client.py)](#t023--cliente-groq-llm_clientpy)
+  - [T024 — Orquestrador de Documentacao (orchestrator.py)](#t024--orquestrador-de-documentacao-orchestratorpy)
+  - [T025-T029 — CLI: init, generate, list + progresso + erros](#t025-t029--cli-init-generate-list--progresso--erros)
+  - [Testes da Fase 3 (TDD)](#testes-da-fase-3-tdd)
+- [Fase 4 — US2: Análise Contextual (Git History + PRs)](#fase-4--us2-analise-contextual-git-history--prs)
+  - [T035 — GitHistoryAnalyzer (git_history.py)](#t035--githistoryanalyzer-git_historypy)
+  - [T036 — PRAnalyzer (pr_analyzer.py)](#t036--pranalyzer-pr_analyzepy)
+  - [T037 — Orchestrator estendido](#t037--orchestrator-estendido)
+  - [T038 — Flags do CLI](#t038--flags-do-cli)
+  - [Testes da Fase 4 (TDD)](#testes-da-fase-4-tdd)
+- [Diagrama completo das 4 fases](#diagrama-completo-das-4-fases)
 - [Glossario para iniciantes](#glossario-para-iniciantes)
 
 ---
@@ -643,29 +658,54 @@ Cria uma pasta TEMPORARIA que e automaticamente deletada no final do teste. Vant
 
 ---
 
-## Diagrama completo das 2 fases
+## Diagrama completo das 4 fases
 
 ```
 FASE 1 — SETUP
-==============
+================
 T001 → pyproject.toml (10 dependencias + pytest config)
-  ├── T002 → mkdir -p src/cli/ src/connectors/ ... (paralelo)
-  ├── T003 → pytest config no pyproject.toml (paralelo)
-  └── T004 → __init__.py em todos os pacotes (paralelo)
+  ├── T002 → mkdir -p src/ tests/
+  ├── T003 → pytest config
+  └── T004 → __init__.py em todos os pacotes
 
 
 FASE 2 — FOUNDATIONAL
-=====================
+======================
 T005+T006 → src/models/repo.py (RepositoryConnection + CredentialConfig)
-T007      → src/models/analysis.py (6 modelos de analise)
-T008      → src/models/documentation.py (Documentation + DocSection + Changelog)
+T007      → src/models/analysis.py (Module, Dependency, CommitEvent, PRInsight, AnalysisResult)
+T008      → src/models/documentation.py (Documentation, DocSection, ChangelogEntry)
 T009      → src/config/settings.py (config manager YAML)
-    ↑ T012 test_config.py (TDD: 5 testes escritos PRIMEIRO)
+    ↑ T012 test_config.py (TDD: 5 testes)
 T010      → src/config/crypto.py (Fernet encrypt/decrypt)
-    ↑ T013 test_crypto.py (TDD: 4 testes escritos PRIMEIRO)
-T011      → src/cli/main.py (esqueleto Typer com 6 comandos)
+    ↑ T013 test_crypto.py (TDD: 4 testes)
+T011      → src/cli/main.py (esqueleto Typer — 6 placeholders)
 
-TUDO PRONTO → Proxima fase: US1 (MVP - implementar o fluxo real)
+
+FASE 3 — US1 (MVP: CONECTAR + ANALISAR + GERAR)
+=================================================
+T014-T017  → 5 testes unitários (GitHub, GitLab, structure, LLM)
+T018      → 2 testes integração (pipeline completo)
+T019      → src/connectors/base.py (interface)
+T020      → src/connectors/github.py (gitpython + PyGithub)
+T021      → src/connectors/gitlab.py (gitpython + python-gitlab)
+T022      → src/analyzers/structure.py (AST + regex)
+T023      → src/generators/llm_client.py (Groq wrapper)
+T024      → src/generators/orchestrator.py (análise → LLM → doc)
+T025-T029 → src/cli/main.py (init, generate, list + erros + progresso)
+
+
+FASE 4 — US2 (GIT HISTORY + PR INSIGHTS)
+==========================================
+T030      → tests/unit/test_git_history.py (TDD: 9 testes)
+T031      → tests/unit/test_pr_analyzer.py (TDD: 5 testes)
+T032      → tests/integration/test_enriched_generation.py (TDD: 3 testes)
+T033+T034 → (já existiam: CommitEvent + PRInsight em analysis.py)
+T035      → src/analyzers/git_history.py (gitpython: commits + significância)
+T036      → src/analyzers/pr_analyzer.py (extração Decision/Rationale de PRs)
+T037      → src/generators/orchestrator.py (seções Change History + Decisions)
+T038      → src/cli/main.py (flags --include-prs/--include-history)
+
+49 PASSED IN 0.67s  ← TUDO VERDE (Fases 1-4 completas)
 ```
 
 ---
@@ -689,6 +729,13 @@ TUDO PRONTO → Proxima fase: US1 (MVP - implementar o fluxo real)
 | **Groq** | Provedor de LLM ultra-rapido (Latencia ~50ms vs ~1s de OpenAI) |
 | **mock** | "Dublê" de funcao em testes — substitui uma funcao real por uma falsa |
 | **VCR** | Gravador de requests HTTP — grava uma vez, replay nas proximas |
+| **SHA** | Hash unico de commit (ex: `a1b2c3d8`) — identifica cada commit no git |
+| **diff** | Diferenca entre duas versoes de um arquivo — mostra o que mudou |
+| **Significancia** | Classificacao de commit: major / minor / refactor / fix / docs |
+| **AST** | Abstract Syntax Tree — representacao estrutural do codigo em arvore |
+| **gitpython** | Biblioteca Python para manipular repositorios git |
+| **Rationale** | Justificativa tecnica para uma decisao arquitetural (extraida de PRs) |
+| **MR** | Merge Request — equivalente do GitLab para Pull Request |
 
 ---
 
@@ -1222,7 +1269,7 @@ class TestFullPipeline:
 
 ---
 
-### Diagrama atualizado (3 fases)
+### Diagrama atualizado (4 fases)
 
 ```
 FASE 1 — SETUP
