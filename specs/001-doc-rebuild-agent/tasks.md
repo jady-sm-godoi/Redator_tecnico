@@ -24,10 +24,10 @@ description: "Task list for Auto Documentation Rebuild Agent implementation"
 
 **Purpose**: Project initialization, dependency setup, basic structure
 
-- [ ] T001 Initialize Python project with pyproject.toml and dependencies (agno, groq, PyGithub, python-gitlab, cryptography, typer, tree-sitter, gitpython)
-- [ ] T002 [P] Create directory structure: src/cli/, src/connectors/, src/analyzers/, src/generators/, src/models/, src/config/, tests/unit/, tests/integration/, tests/fixtures/
-- [ ] T003 [P] Configure pytest with pytest-vcr, pytest-mock in pyproject.toml
-- [ ] T004 [P] Create `src/__init__.py` and all subpackage `__init__.py` files
+- [X] T001 Initialize Python project with pyproject.toml and dependencies (agno, groq, PyGithub, python-gitlab, cryptography, typer, tree-sitter, gitpython)
+- [X] T002 [P] Create directory structure: src/cli/, src/connectors/, src/analyzers/, src/generators/, src/models/, src/config/, tests/unit/, tests/integration/, tests/fixtures/
+- [X] T003 [P] Configure pytest with pytest-vcr, pytest-mock in pyproject.toml
+- [X] T004 [P] Create `src/__init__.py` and all subpackage `__init__.py` files
 
 ---
 
@@ -37,18 +37,18 @@ description: "Task list for Auto Documentation Rebuild Agent implementation"
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 [P] Create RepositoryConnection model in src/models/repo.py
-- [ ] T006 [P] Create CredentialConfig model in src/models/repo.py
-- [ ] T007 [P] Create AnalysisResult model (Module, Dependency) in src/models/analysis.py
-- [ ] T008 [P] Create Documentation model (DocSection, ChangelogEntry) in src/models/documentation.py
-- [ ] T009 [P] Implement config management in src/config/settings.py (config file load/save, paths)
-- [ ] T010 Implement encrypted credential storage in src/config/crypto.py (Fernet encrypt/decrypt)
-- [ ] T011 [P] Setup CLI entry point structure in src/cli/main.py (typer app with placeholder commands)
+- [X] T005 [P] Create RepositoryConnection model in src/models/repo.py
+- [X] T006 [P] Create CredentialConfig model in src/models/repo.py
+- [X] T007 [P] Create AnalysisResult model (Module, Dependency) in src/models/analysis.py
+- [X] T008 [P] Create Documentation model (DocSection, ChangelogEntry) in src/models/documentation.py
+- [X] T009 [P] Implement config management in src/config/settings.py (config file load/save, paths)
+- [X] T010 Implement encrypted credential storage in src/config/crypto.py (Fernet encrypt/decrypt)
+- [X] T011 [P] Setup CLI entry point structure in src/cli/main.py (typer app with placeholder commands)
 
 ### Tests for Foundational ⚠️
 
-- [ ] T012 [P] Unit test for config load/save in tests/unit/test_config.py
-- [ ] T013 [P] Unit test for credential encrypt/decrypt in tests/unit/test_crypto.py
+- [X] T012 [P] Unit test for config load/save in tests/unit/test_config.py (5 tests)
+- [X] T013 [P] Unit test for credential encrypt/decrypt in tests/unit/test_crypto.py (4 tests)
 
 **Checkpoint**: Foundation ready — user story implementation can begin
 
@@ -62,25 +62,25 @@ description: "Task list for Auto Documentation Rebuild Agent implementation"
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T014 [P] [US1] Contract test for GitHub connector in tests/unit/test_github_connector.py
-- [ ] T015 [P] [US1] Contract test for GitLab connector in tests/unit/test_gitlab_connector.py
-- [ ] T016 [P] [US1] Unit test for structure analyzer in tests/unit/test_structure_analyzer.py
-- [ ] T017 [P] [US1] Unit test for LLM client in tests/unit/test_llm_client.py
-- [ ] T018 [US1] Integration test for full pipeline (init + generate) in tests/integration/test_full_pipeline.py
+- [X] T014 [P] [US1] Contract test for GitHub connector in tests/unit/test_github_connector.py
+- [X] T015 [P] [US1] Contract test for GitLab connector in tests/unit/test_gitlab_connector.py
+- [X] T016 [P] [US1] Unit test for structure analyzer in tests/unit/test_structure_analyzer.py
+- [X] T017 [P] [US1] Unit test for LLM client in tests/unit/test_llm_client.py
+- [X] T018 [US1] Integration test for full pipeline (init + generate) in tests/integration/test_full_pipeline.py
 
 ### Implementation for User Story 1
 
-- [ ] T019 [P] [US1] Implement base connector interface in src/connectors/base.py
-- [ ] T020 [P] [US1] Implement GitHub connector in src/connectors/github.py (clone/fetch repo, list files)
-- [ ] T021 [P] [US1] Implement GitLab connector in src/connectors/gitlab.py (clone/fetch repo, list files)
-- [ ] T022 [US1] Implement code structure analyzer in src/analyzers/structure.py (tree-sitter module detection per language)
-- [ ] T023 [P] [US1] Implement Groq LLM client in src/generators/llm_client.py
-- [ ] T024 [US1] Implement doc generation orchestrator in src/generators/orchestrator.py (Agno agent: structure → LLM → Markdown output)
-- [ ] T025 [US1] Wire CLI `init` command in src/cli/main.py (repo URL, branch, credential prompt)
-- [ ] T026 [US1] Wire CLI `generate` command in src/cli/main.py (repo URL, output dir)
-- [ ] T027 [US1] Wire CLI `list` command in src/cli/main.py (show configured repos)
-- [ ] T028 [US1] Add progress feedback (stderr) during analysis and generation phases per FR-009
-- [ ] T029 [US1] Handle empty/unsupported repos gracefully per FR-008
+- [X] T019 [P] [US1] Implement base connector interface in src/connectors/base.py
+- [X] T020 [P] [US1] Implement GitHub connector in src/connectors/github.py (clone/fetch repo, list files)
+- [X] T021 [P] [US1] Implement GitLab connector in src/connectors/gitlab.py (clone/fetch repo, list files)
+- [X] T022 [US1] Implement code structure analyzer in src/analyzers/structure.py (tree-sitter module detection per language)
+- [X] T023 [P] [US1] Implement Groq LLM client in src/generators/llm_client.py
+- [X] T024 [US1] Implement doc generation orchestrator in src/generators/orchestrator.py (Agno agent: structure → LLM → Markdown output)
+- [X] T025 [US1] Wire CLI `init` command in src/cli/main.py (repo URL, branch, credential prompt)
+- [X] T026 [US1] Wire CLI `generate` command in src/cli/main.py (repo URL, output dir)
+- [X] T027 [US1] Wire CLI `list` command in src/cli/main.py (show configured repos)
+- [X] T028 [US1] Add progress feedback (stderr) during analysis and generation phases per FR-009
+- [X] T029 [US1] Handle empty/unsupported repos gracefully per FR-008
 
 **Checkpoint**: User Story 1 fully functional — docs generated from public repos
 
