@@ -2,6 +2,16 @@
 
 **Feature Branch**: `001-doc-rebuild-agent`
 
+## Clarifications
+
+### Session 2026-06-05
+
+- Q: Credential management — how should repo access tokens be stored? → A: Encrypted per-repo config file in tool storage
+- Q: Output format — what format should generated documentation use? → A: Markdown (.md)
+- Q: Update trigger — how should doc regeneration be triggered when code changes? → A: Manual trigger + optional webhook
+- Q: Platform scope — which Git hosting platforms must v1 support? → A: GitHub + GitLab only
+- Q: User persona — who is the primary user and how do they interact? → A: Single-user CLI tool, team-sharable config
+
 **Created**: 2026-06-05
 
 **Status**: Draft
@@ -12,7 +22,7 @@
 
 ### User Story 1 - Repo Connection and Doc Generation (Priority: P1)
 
-An engineer connects a client repository to the system. The agent analyzes the repository's source code and generates comprehensive technical documentation for the solution and its architecture.
+An engineer configures a client repository via CLI, then runs the agent to analyze source code and generate comprehensive technical documentation for the solution and its architecture.
 
 **Why this priority**: Core value proposition - without connecting and analyzing repos, no documentation can be produced. This is the fundamental flow.
 
@@ -43,7 +53,7 @@ A team lead wants documentation that captures not just the current code state bu
 
 ### User Story 3 - Documentation Updates on Code Changes (Priority: P3)
 
-A development team wants documentation to stay in sync with the codebase. The agent detects significant changes in the repository and offers to regenerate affected documentation sections.
+A development team wants documentation to stay in sync with the codebase. The agent detects significant changes in the repository on manual trigger and offers to regenerate affected documentation sections. Optional webhook integration automates detection on push.
 
 **Why this priority**: Continuous synchronization is valuable for long-term maintenance but not essential for initial adoption or first-use scenarios.
 
@@ -69,16 +79,17 @@ A development team wants documentation to stay in sync with the codebase. The ag
 
 ### Functional Requirements
 
-- **FR-001**: System MUST connect to remote Git repositories using configurable access credentials
+- **FR-001**: System MUST connect to remote Git repositories hosted on GitHub or GitLab using configurable access credentials
 - **FR-002**: System MUST scan source code structure to identify modules, components, and their dependencies
 - **FR-003**: System MUST analyze git commit history to extract patterns of change and architectural evolution
 - **FR-004**: System MUST process pull request descriptions and discussions to capture architectural decision rationale
 - **FR-005**: System MUST generate technical documentation covering architecture overview, component relationships, data flow, and key design decisions
-- **FR-006**: System MUST output documentation in a standard portable format readable by non-technical stakeholders
-- **FR-007**: System MUST allow users to specify repository connection parameters (URL, credentials, branch)
+- **FR-006**: System MUST output documentation in Markdown (.md) format readable by non-technical stakeholders
+- **FR-007**: System MUST expose all functionality via a command-line interface with configurable repository connection parameters (URL, credentials, branch)
 - **FR-008**: System MUST handle repositories with zero or unsupported content gracefully, reporting the limitation to the user
 - **FR-009**: System MUST provide progress feedback during analysis and generation phases
 - **FR-010**: System MUST detect structural changes in previously analyzed repositories and flag affected documentation sections
+- **FR-011**: System MUST store repository credentials encrypted on disk in a per-repository configuration file
 
 ### Key Entities *(include if feature involves data)*
 
