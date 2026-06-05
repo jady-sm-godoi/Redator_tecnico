@@ -1,5 +1,5 @@
-from src.models.analysis import PRInsight
-from src.connectors.base import BaseConnector
+from redator_tecnico.models.analysis import PRInsight
+from redator_tecnico.connectors.base import BaseConnector
 
 
 class PRAnalyzer:
@@ -7,8 +7,8 @@ class PRAnalyzer:
         self.connector = connector
 
     def analyze(self, token: str, state: str = "all") -> list[PRInsight]:
-        from src.connectors.github import GitHubConnector
-        from src.connectors.gitlab import GitLabConnector
+        from redator_tecnico.connectors.github import GitHubConnector
+        from redator_tecnico.connectors.gitlab import GitLabConnector
 
         if isinstance(self.connector, GitHubConnector):
             raw_prs = self.connector.fetch_prs(token, state=state)

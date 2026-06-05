@@ -1,6 +1,6 @@
 from pathlib import Path
-from src.analyzers.git_history import GitHistoryAnalyzer
-from src.models.analysis import Significance
+from redator_tecnico.analyzers.git_history import GitHistoryAnalyzer
+from redator_tecnico.models.analysis import Significance
 
 
 class TestGitHistoryAnalyzer:

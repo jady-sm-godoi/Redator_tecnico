@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from src.connectors.gitlab import GitLabConnector
-from src.models.repo import RepositoryConnection
+from redator_tecnico.connectors.gitlab import GitLabConnector
+from redator_tecnico.models.repo import RepositoryConnection
 
 
 class TestGitLabConnector:
@@ -27,13 +27,13 @@ class TestGitLabConnector:
         assert Path(".gitkeep") not in files
         assert len(files) == 1
 
-    @patch("src.connectors.gitlab.git.Repo.clone_from")
+    @patch("redator_tecnico.connectors.gitlab.git.Repo.clone_from")
     def test_clone_repo(self, mock_clone):
         self.connector.clone_repo(tmp_path := Path("/tmp/test-clone"), "fake-token")
         expected_url = "https://oauth2:fake-token@gitlab.com/test-owner/test-project.git"
         mock_clone.assert_called_once_with(expected_url, tmp_path, depth=1)
 
-    @patch("src.connectors.gitlab.gitlab.Gitlab")
+    @patch("redator_tecnico.connectors.gitlab.gitlab.Gitlab")
     def test_fetch_merge_requests(self, mock_gitlab_cls):
         mock_api = MagicMock()
         mock_gitlab_cls.return_value = mock_api

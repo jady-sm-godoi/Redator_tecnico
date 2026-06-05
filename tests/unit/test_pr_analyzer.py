@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock, patch
-from src.analyzers.pr_analyzer import PRAnalyzer
-from src.connectors.github import GitHubConnector
-from src.connectors.gitlab import GitLabConnector
-from src.models.repo import RepositoryConnection
+from redator_tecnico.analyzers.pr_analyzer import PRAnalyzer
+from redator_tecnico.connectors.github import GitHubConnector
+from redator_tecnico.connectors.gitlab import GitLabConnector
+from redator_tecnico.models.repo import RepositoryConnection
 
 
 class TestPRAnalyzer:

@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import datetime
 import git
-from src.models.analysis import CommitEvent, Significance
+from redator_tecnico.models.analysis import CommitEvent, Significance
 
 
 class GitHistoryAnalyzer:

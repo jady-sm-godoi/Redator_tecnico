@@ -1,6 +1,6 @@
 import tempfile
 from pathlib import Path
-from src.config.settings import (
+from redator_tecnico.config.settings import (
     AppConfig,
     RepoConfig,
     GenerationConfig,

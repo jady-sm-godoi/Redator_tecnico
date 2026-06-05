@@ -4,19 +4,19 @@ from pathlib import Path
 from typing import Optional
 from importlib.metadata import version, PackageNotFoundError
 import typer
-from src.config.settings import load_config, save_config, AppConfig, RepoConfig
-from src.config.crypto import encrypt_token, decrypt_token
-from src.connectors.github import GitHubConnector
-from src.connectors.gitlab import GitLabConnector
-from src.models.repo import RepositoryConnection, Provider
-from src.analyzers.structure import StructureAnalyzer
-from src.analyzers.git_history import GitHistoryAnalyzer
-from src.analyzers.pr_analyzer import PRAnalyzer
-from src.generators.llm_client import GroqClient
-from src.generators.orchestrator import DocOrchestrator
-from src.models.documentation import load_doc_metadata, save_doc_metadata
-from src.analyzers.structure import compute_module_hashes
-from src.cli.output import info, success, error, warn, print_json
+from redator_tecnico.config.settings import load_config, save_config, AppConfig, RepoConfig
+from redator_tecnico.config.crypto import encrypt_token, decrypt_token
+from redator_tecnico.connectors.github import GitHubConnector
+from redator_tecnico.connectors.gitlab import GitLabConnector
+from redator_tecnico.models.repo import RepositoryConnection, Provider
+from redator_tecnico.analyzers.structure import StructureAnalyzer
+from redator_tecnico.analyzers.git_history import GitHistoryAnalyzer
+from redator_tecnico.analyzers.pr_analyzer import PRAnalyzer
+from redator_tecnico.generators.llm_client import GroqClient
+from redator_tecnico.generators.orchestrator import DocOrchestrator
+from redator_tecnico.models.documentation import load_doc_metadata, save_doc_metadata
+from redator_tecnico.analyzers.structure import compute_module_hashes
+from redator_tecnico.cli.output import info, success, error, warn, print_json
 
 try:
     __version__ = version("redator-tecnico")
@@ -364,7 +364,7 @@ def update(
     llm = GroqClient(api_key=api_key)
     orch = DocOrchestrator(llm)
 
-    from src.models.documentation import Documentation, DocSection
+    from redator_tecnico.models.documentation import Documentation, DocSection
     existing_sections = [
         DocSection(title=s.title, level=s.level, source_modules=s.source_modules)
         for s in meta.sections

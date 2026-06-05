@@ -1,8 +1,8 @@
 from pathlib import Path
 from unittest.mock import MagicMock
-from src.models.documentation import Documentation, DocSection, save_doc_metadata, load_doc_metadata
-from src.models.analysis import AnalysisResult, Module, ModuleType
-from src.generators.orchestrator import DocOrchestrator
+from redator_tecnico.models.documentation import Documentation, DocSection, save_doc_metadata, load_doc_metadata
+from redator_tecnico.models.analysis import AnalysisResult, Module, ModuleType
+from redator_tecnico.generators.orchestrator import DocOrchestrator
 
 
 class TestIncrementalUpdate:
@@ -49,15 +49,15 @@ class TestIncrementalUpdate:
         old_doc = orch.generate(analysis, "https://github.com/test/repo")
         save_doc_metadata(old_doc, doc_dir)
 
-        from src.models.documentation import load_doc_metadata
-        from src.analyzers.structure import compute_module_hashes
+        from redator_tecnico.models.documentation import load_doc_metadata
+        from redator_tecnico.analyzers.structure import compute_module_hashes
         repo_dir = tmp_path / "repo"
         repo_dir.mkdir()
         (repo_dir / "mod0.py").write_text("import os\n\ndef func():\n    pass\n")
         (repo_dir / "mod1.py").write_text("def helper():\n    return 1\n")
 
         current_hashes = compute_module_hashes(repo_dir)
-        from src.analyzers.structure import StructureAnalyzer
+        from redator_tecnico.analyzers.structure import StructureAnalyzer
         analyzer = StructureAnalyzer(repo_dir)
         new_analysis = analyzer.analyze()
 

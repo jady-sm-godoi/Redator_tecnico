@@ -1,6 +1,6 @@
 import tempfile
 from pathlib import Path
-from src.config.crypto import encrypt_token, decrypt_token
+from redator_tecnico.config.crypto import encrypt_token, decrypt_token
 
 
 class TestCrypto:

@@ -1,9 +1,9 @@
 from pathlib import Path
 import git
 from github import Github
-from src.connectors.base import BaseConnector
-from src.connectors.utils import retry, check_github_rate_limit, warn_if_near_limit
-from src.models.repo import RepositoryConnection
+from redator_tecnico.connectors.base import BaseConnector
+from redator_tecnico.connectors.utils import retry, check_github_rate_limit, warn_if_near_limit
+from redator_tecnico.models.repo import RepositoryConnection
 
 
 class GitHubConnector(BaseConnector):

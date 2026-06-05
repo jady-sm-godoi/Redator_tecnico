@@ -215,7 +215,7 @@ Criado um `__init__.py` em **cada pasta** de `src/` e `tests/`.
 **Por que?** No Python, uma pasta so e considerada um **pacote** (importavel) se tiver `__init__.py`. Sem ele:
 
 ```python
-from src.models.repo import RepositoryConnection  # Erro: src nao e pacote!
+    from redator_tecnico.models.repo import RepositoryConnection  # Erro: src nao e pacote!
 ```
 
 Com ele, funciona. O arquivo pode ser vazio (`touch arquivo`), mas precisa existir.
@@ -603,7 +603,7 @@ Seguimos **TDD (Test-Driven Development)**:
 ```python
 import tempfile
 from pathlib import Path
-from src.config.settings import AppConfig, RepoConfig, save_config, load_config
+from redator_tecnico.config.settings import AppConfig, RepoConfig, save_config, load_config
 
 class TestConfigManagement:
     def test_save_and_load_config(self):

@@ -1,11 +1,11 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 from datetime import datetime
-from src.models.repo import RepositoryConnection
-from src.models.analysis import AnalysisResult, CommitEvent, PRInsight, Significance
-from src.analyzers.structure import StructureAnalyzer
-from src.generators.llm_client import GroqClient
-from src.generators.orchestrator import DocOrchestrator
+from redator_tecnico.models.repo import RepositoryConnection
+from redator_tecnico.models.analysis import AnalysisResult, CommitEvent, PRInsight, Significance
+from redator_tecnico.analyzers.structure import StructureAnalyzer
+from redator_tecnico.generators.llm_client import GroqClient
+from redator_tecnico.generators.orchestrator import DocOrchestrator
 
 
 class TestEnrichedGeneration:

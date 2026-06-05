@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock, patch
-from src.generators.llm_client import GroqClient
+from redator_tecnico.generators.llm_client import GroqClient
 
 
 class TestGroqClient:

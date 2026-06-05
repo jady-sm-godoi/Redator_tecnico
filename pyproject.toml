@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.scripts]
-doc-rebuild = "src.cli.main:app"
+doc-rebuild = "redator_tecnico.cli.main:app"
 
 [tool.setuptools.packages.find]
 where = ["src"]

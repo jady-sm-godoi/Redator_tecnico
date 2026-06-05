@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from src.models.repo import RepositoryConnection
+from redator_tecnico.models.repo import RepositoryConnection
 
 
 class BaseConnector(ABC):

@@ -1,6 +1,6 @@
 import hashlib
 from pathlib import Path
-from src.models.analysis import Module, ModuleType, Dependency, DepType, AnalysisResult
+from redator_tecnico.models.analysis import Module, ModuleType, Dependency, DepType, AnalysisResult
 
 
 LANGUAGE_EXTENSIONS: dict[str, str] = {

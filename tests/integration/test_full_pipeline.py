@@ -1,9 +1,9 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from src.models.repo import RepositoryConnection
-from src.analyzers.structure import StructureAnalyzer
-from src.generators.llm_client import GroqClient
-from src.generators.orchestrator import DocOrchestrator
+from redator_tecnico.models.repo import RepositoryConnection
+from redator_tecnico.analyzers.structure import StructureAnalyzer
+from redator_tecnico.generators.llm_client import GroqClient
+from redator_tecnico.generators.orchestrator import DocOrchestrator
 
 
 class TestFullPipeline:

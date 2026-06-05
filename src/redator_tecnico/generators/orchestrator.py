@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import datetime
-from src.models.analysis import AnalysisResult, CommitEvent, PRInsight
-from src.models.documentation import Documentation, DocSection, load_doc_metadata, save_doc_metadata
+from redator_tecnico.models.analysis import AnalysisResult, CommitEvent, PRInsight
+from redator_tecnico.models.documentation import Documentation, DocSection, load_doc_metadata, save_doc_metadata
 
 
 DOC_SECTION_PROMPT = """Based on the following source code analysis, generate a documentation section.

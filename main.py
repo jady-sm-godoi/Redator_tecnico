@@ -1,6 +1,5 @@
-def main():
-    print("Hello from redator-tecnico!")
+from redator_tecnico.cli.main import app
 
 
 if __name__ == "__main__":
-    main()
+    app()

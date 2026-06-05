@@ -1,7 +1,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from src.connectors.github import GitHubConnector
-from src.models.repo import RepositoryConnection
+from redator_tecnico.connectors.github import GitHubConnector
+from redator_tecnico.models.repo import RepositoryConnection
 
 
 class TestGitHubConnector:
@@ -30,13 +30,13 @@ class TestGitHubConnector:
         assert Path(".env") not in files
         assert len(files) == 1
 
-    @patch("src.connectors.github.git.Repo.clone_from")
+    @patch("redator_tecnico.connectors.github.git.Repo.clone_from")
     def test_clone_repo(self, mock_clone):
         self.connector.clone_repo(tmp_path := Path("/tmp/test-clone"), "fake-token")
         expected_url = "https://x-access-token:fake-token@github.com/test-owner/test-repo.git"
         mock_clone.assert_called_once_with(expected_url, tmp_path, depth=1)
 
-    @patch("src.connectors.github.Github")
+    @patch("redator_tecnico.connectors.github.Github")
     def test_fetch_prs(self, mock_github):
         mock_api = MagicMock()
         mock_github.return_value = mock_api

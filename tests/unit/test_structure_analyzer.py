@@ -1,5 +1,5 @@
 from pathlib import Path
-from src.analyzers.structure import StructureAnalyzer
+from redator_tecnico.analyzers.structure import StructureAnalyzer
 
 
 class TestStructureAnalyzer:

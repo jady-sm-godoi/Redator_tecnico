@@ -1,10 +1,10 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from src.models.analysis import AnalysisResult, Module, ModuleType
-from src.models.documentation import Documentation, save_doc_metadata, load_doc_metadata
-from src.generators.orchestrator import DocOrchestrator
-from src.analyzers.structure import StructureAnalyzer, compute_module_hashes
+from redator_tecnico.models.analysis import AnalysisResult, Module, ModuleType
+from redator_tecnico.models.documentation import Documentation, save_doc_metadata, load_doc_metadata
+from redator_tecnico.generators.orchestrator import DocOrchestrator
+from redator_tecnico.analyzers.structure import StructureAnalyzer, compute_module_hashes
 
 
 class TestStalenessFlow:

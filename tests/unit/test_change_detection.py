@@ -1,8 +1,8 @@
 from pathlib import Path
-from src.models.documentation import DocMetadata, SectionMetadata, save_doc_metadata
-from src.models.analysis import Module, ModuleType, AnalysisResult
-from src.generators.orchestrator import DocOrchestrator
-from src.analyzers.structure import StructureAnalyzer, compute_module_hashes
+from redator_tecnico.models.documentation import DocMetadata, SectionMetadata, save_doc_metadata
+from redator_tecnico.models.analysis import Module, ModuleType, AnalysisResult
+from redator_tecnico.generators.orchestrator import DocOrchestrator
+from redator_tecnico.analyzers.structure import StructureAnalyzer, compute_module_hashes
 
 
 class TestChangeDetection:
@@ -21,7 +21,7 @@ class TestChangeDetection:
         analysis = analyzer.analyze()
         hashes = compute_module_hashes(repo_dir)
 
-        from src.models.documentation import Documentation, DocSection
+        from redator_tecnico.models.documentation import Documentation, DocSection
         doc = Documentation(
             repo_url="https://github.com/test/repo",
             sections=[
@@ -48,7 +48,7 @@ class TestChangeDetection:
         old_analysis = analyzer.analyze()
         old_hashes = compute_module_hashes(repo_dir)
 
-        from src.models.documentation import Documentation, DocSection
+        from redator_tecnico.models.documentation import Documentation, DocSection
         doc = Documentation(
             repo_url="https://github.com/test/repo",
             sections=[
@@ -79,7 +79,7 @@ class TestChangeDetection:
         old_analysis = analyzer.analyze()
         old_hashes = compute_module_hashes(repo_dir)
 
-        from src.models.documentation import Documentation, DocSection
+        from redator_tecnico.models.documentation import Documentation, DocSection
         doc = Documentation(
             repo_url="https://github.com/test/repo",
             sections=[
@@ -111,7 +111,7 @@ class TestChangeDetection:
         old_analysis = analyzer.analyze()
         old_hashes = compute_module_hashes(repo_dir)
 
-        from src.models.documentation import Documentation, DocSection
+        from redator_tecnico.models.documentation import Documentation, DocSection
         doc = Documentation(
             repo_url="https://github.com/test/repo",
             sections=[
